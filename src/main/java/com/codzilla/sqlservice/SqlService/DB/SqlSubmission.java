@@ -26,9 +26,9 @@ public class SqlSubmission {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
-    private Task taskId;
+    private Task task;
 
-    @Column(nullable = false)
+    @Column(name = "user_id" , nullable = false)
     private UUID userId;
 
     @Column(columnDefinition = "TEXT" , nullable = false)
