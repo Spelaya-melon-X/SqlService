@@ -46,6 +46,8 @@ dependencies {
 	testRuntimeOnly 'com.h2database:h2'
 	testImplementation 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+		implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
 }
 
 tasks.named('test') {

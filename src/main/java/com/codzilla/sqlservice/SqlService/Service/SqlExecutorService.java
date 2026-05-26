@@ -2,7 +2,7 @@ package com.codzilla.sqlservice.SqlService.Service;
 
 
 import com.codzilla.sqlservice.SqlService.DB.DockerContainers;
-import com.codzilla.sqlservice.SqlService.model.SqlExecutionResult;
+import com.codzilla.sqlservice.SqlService.Dto.SqlExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;

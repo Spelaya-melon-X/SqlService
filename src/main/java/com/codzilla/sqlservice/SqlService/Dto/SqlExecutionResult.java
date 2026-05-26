@@ -1,4 +1,6 @@
-package com.codzilla.sqlservice.SqlService.model;
+package com.codzilla.sqlservice.SqlService.Dto;
+
+import com.codzilla.sqlservice.SqlService.model.SqlVerdict;
 
 import java.util.List;
 import java.util.Map;

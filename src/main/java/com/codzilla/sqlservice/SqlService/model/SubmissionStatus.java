@@ -5,5 +5,6 @@ public enum SubmissionStatus {
     ACCEPTED,
     WRONG_ANSWER,
     ERROR,
-    TIMEOUT
+    TIMEOUT,
+    DONE
 }

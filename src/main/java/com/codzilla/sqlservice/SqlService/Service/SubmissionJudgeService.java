@@ -1,6 +1,6 @@
 package com.codzilla.sqlservice.SqlService.Service;
-import com.codzilla.sqlservice.SqlService.model.JudgeResult;
-import com.codzilla.sqlservice.SqlService.model.SqlExecutionResult;
+import com.codzilla.sqlservice.SqlService.Dto.JudgeResult;
+import com.codzilla.sqlservice.SqlService.Dto.SqlExecutionResult;
 import com.codzilla.sqlservice.SqlService.model.SqlVerdict;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

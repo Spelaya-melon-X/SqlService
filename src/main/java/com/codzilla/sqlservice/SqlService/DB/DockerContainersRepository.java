@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface DockerContainersRepository extends JpaRepository<DockerContainers, Long> {
 
     /** find first free container */
-    Optional<DockerContainers> findFirstByDatabaseIdAndStatus(DatabaseEntity database, ContainerStatus status);
+    Optional<DockerContainers> findFirstByDatabaseAndStatus(DatabaseEntity database, ContainerStatus status);
 
     /** all containers*/
     List<DockerContainers> findAllByDatabase(DatabaseEntity database);

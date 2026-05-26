@@ -1,4 +1,4 @@
-package com.codzilla.sqlservice.SqlService.model;
+package com.codzilla.sqlservice.SqlService.Dto;
 
 import java.util.List;
 import java.util.Map;

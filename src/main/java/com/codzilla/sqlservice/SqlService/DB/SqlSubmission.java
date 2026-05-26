@@ -43,7 +43,7 @@ public class SqlSubmission {
     private SqlVerdict verdict;
 
     @Column(name = "kafka_offset")
-    private Long kafkaVerdict;
+    private Long kafkaOffset;
 
     @Column(name="error_message")
     private String errorMessage;
