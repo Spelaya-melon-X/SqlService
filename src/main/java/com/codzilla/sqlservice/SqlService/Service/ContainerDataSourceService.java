@@ -35,10 +35,12 @@ public class ContainerDataSourceService {
 
         // JDBC URL для PostgreSQL внутри Docker-контейнера
         // host и port берём из нашей таблицы docker_containers
+        String dbName = container.getDatabase().getName();
         config.setJdbcUrl(String.format(
-                "jdbc:postgresql://%s:%d/testdb",
+                "jdbc:postgresql://%s:%d/%s",
                 container.getHost(),
-                container.getPort()
+                container.getPort(),
+                dbName
         ));
 
 

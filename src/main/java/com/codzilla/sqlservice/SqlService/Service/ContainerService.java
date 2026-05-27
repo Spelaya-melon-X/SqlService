@@ -84,4 +84,14 @@ public class ContainerService {
         containerRepository.delete(container);
         log.info("Deleted container {}", containerId);
     }
+
+    @Transactional
+    public void deleteAllContainers() {
+        List<DockerContainers> all = containerRepository.findAll();
+        for (DockerContainers c : all) {
+            dataSourceService.evictContainer(c.getContainerId());
+        }
+        containerRepository.deleteAll();
+        log.info("All containers deleted from database");
+    }
 }
