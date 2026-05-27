@@ -66,11 +66,16 @@ public class KafkaConfig {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "sql-judge-group");
+
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JacksonJsonDeserializer.class);
+
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); // Читаем с последнего подтверждённого offset при старте
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
-        props.put(JacksonJsonDeserializer.TRUSTED_PACKAGES, "com.codzilla.sqlservice.SqlService.kafka"); // Разрешаем наш DTO (иначе JsonDeserializer откажется его читать)
+        props.put(JacksonJsonDeserializer.TRUSTED_PACKAGES, "com.codzilla.sqlservice.SqlService");// Разрешаем наш DTO (иначе JsonDeserializer откажется его читать)
+        props.put(JacksonJsonDeserializer.VALUE_DEFAULT_TYPE, SubmissionKafkaMessage.class.getName());
+        //TODO : мб это подойдет если то нет
+//        props.put(JacksonJsonDeserializer.TRUSTED_PACKAGES, "com.codzilla.sqlservice.SqlService");
         return new DefaultKafkaConsumerFactory<>(props);
     }
 

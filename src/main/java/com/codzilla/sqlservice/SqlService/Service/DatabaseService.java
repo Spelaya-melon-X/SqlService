@@ -6,10 +6,13 @@ import com.codzilla.sqlservice.SqlService.DB.DatabasesRepository;
 import com.codzilla.sqlservice.SqlService.DB.Task;
 import com.codzilla.sqlservice.SqlService.DB.TaskRepository;
 import com.codzilla.sqlservice.SqlService.model.TaskType;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,8 +41,9 @@ public class DatabaseService {
 
 
     @Transactional
-    public Optional<DatabaseEntity> addDatabase(String name) {
+    public Optional<DatabaseEntity> addDatabase(String name, @NotBlank String s) {
         DatabaseEntity databaseEntity = new DatabaseEntity();
+        databaseEntity.setSchemaName(s);
         databaseEntity.setName(name);
 
         DatabaseEntity result = databases.save(databaseEntity);
@@ -66,5 +70,20 @@ public class DatabaseService {
     @Transactional(readOnly = true)
     public List<Task> getAllTasks() {
         return tasksRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DatabaseEntity> getAllDatabases() {
+        log.info("Fetching all databases");
+        return databases.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public DatabaseEntity getById(Long id) {
+        return databases.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Database not found with id: " + id
+                ));
     }
 }

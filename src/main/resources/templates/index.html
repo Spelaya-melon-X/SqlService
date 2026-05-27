@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLZILLA — SQL Judge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --ruby: #A6171C;
+          --ruby-dark: #7a1015;
+          --ruby-light: #f5d0d1;
+          --natural: #D6D0C5;
+          --natural-dark: #b8b1a4;
+          --natural-light: #f0ede7;
+          --sunny: #F1C045;
+          --sunny-dark: #c99a1e;
+          --sunny-light: #fdf3d0;
+          --black: #0d0d0d;
+          --white: #fafaf8;
+          --border: 3px solid var(--black);
+          --shadow: 5px 5px 0px var(--black);
+          --shadow-lg: 8px 8px 0px var(--black);
+          --shadow-hover: 2px 2px 0px var(--black);
+          --font-display: 'Bebas Neue', sans-serif;
+          --font-mono: 'Space Mono', monospace;
+          --font-body: 'DM Sans', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+          font-family: var(--font-body);
+          background: var(--natural-light);
+          color: var(--black);
+          overflow-x: hidden;
+          cursor: crosshair;
+        }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--natural); }
+        ::-webkit-scrollbar-thumb { background: var(--black); }
+
+        /* ─── NOISE TEXTURE OVERLAY ─── */
+        body::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+          pointer-events: none;
+          z-index: 9999;
+        }
+
+        /* ─── CURSOR ─── */
+        .cursor-dot {
+          position: fixed;
+          width: 12px; height: 12px;
+          background: var(--ruby);
+          border: 2px solid var(--black);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 10000;
+          transform: translate(-50%, -50%);
+          transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+        }
+        .cursor-ring {
+          position: fixed;
+          width: 36px; height: 36px;
+          border: 2px solid var(--black);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 9998;
+          transform: translate(-50%, -50%);
+          transition: transform 0.15s ease-out, width 0.2s, height 0.2s;
+        }
+
+        /* ─── NAVBAR ─── */
+        nav {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: var(--black);
+          border-bottom: 3px solid var(--sunny);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 2rem;
+          height: 64px;
+        }
+        .nav-logo {
+          font-family: var(--font-display);
+          font-size: 2.2rem;
+          color: var(--sunny);
+          letter-spacing: 2px;
+          cursor: pointer;
+        }
+        .nav-logo span { color: var(--ruby); }
+        .nav-links { display: flex; gap: 0; }
+        .nav-link {
+          font-family: var(--font-mono);
+          font-size: 0.75rem;
+          color: var(--natural);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          padding: 0 1.2rem;
+          height: 64px;
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          border-left: 1px solid rgba(255,255,255,0.1);
+          transition: background 0.2s, color 0.2s;
+          text-decoration: none;
+        }
+        .nav-link:hover { background: var(--ruby); color: var(--white); }
+        .nav-link.active { background: var(--sunny); color: var(--black); font-weight: 700; }
+
+        /* ─── HERO ─── */
+        .hero {
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          background: var(--black);
+        }
+        .hero-bg-grid {
+          position: absolute;
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(241,192,69,0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(241,192,69,0.08) 1px, transparent 1px);
+          background-size: 60px 60px;
+          animation: gridFloat 20s linear infinite;
+        }
+        @keyframes gridFloat {
+          0% { transform: translate(0,0); }
+          100% { transform: translate(60px, 60px); }
+        }
+        .hero-ticker {
+          position: absolute;
+          bottom: 80px;
+          left: 0;
+          right: 0;
+          overflow: hidden;
+          border-top: 3px solid var(--sunny);
+          border-bottom: 3px solid var(--sunny);
+          background: var(--sunny);
+          padding: 10px 0;
+        }
+        .hero-ticker-inner {
+          display: flex;
+          gap: 0;
+          animation: tickerScroll 18s linear infinite;
+          white-space: nowrap;
+        }
+        .hero-ticker-item {
+          font-family: var(--font-display);
+          font-size: 1.6rem;
+          letter-spacing: 2px;
+          color: var(--black);
+          padding: 0 2rem;
+        }
+        .hero-ticker-item::after { content: ' ★ '; color: var(--ruby); }
+        @keyframes tickerScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .hero-content {
+          position: relative;
+          z-index: 2;
+          padding: 0 8vw;
+          max-width: 900px;
+        }
+        .hero-eyebrow {
+          font-family: var(--font-mono);
+          font-size: 0.8rem;
+          color: var(--sunny);
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          margin-bottom: 1.5rem;
+          opacity: 0;
+          animation: fadeUp 0.6s ease forwards 0.2s;
+        }
+        .hero-title {
+          font-family: var(--font-display);
+          font-size: clamp(5rem, 13vw, 13rem);
+          line-height: 0.9;
+          color: var(--white);
+          margin-bottom: 1rem;
+          opacity: 0;
+          animation: fadeUp 0.8s ease forwards 0.4s;
+        }
+        .hero-title .accent { color: var(--ruby); -webkit-text-stroke: 0px; }
+        .hero-title .outline {
+          -webkit-text-stroke: 3px var(--sunny);
+          color: transparent;
+        }
+        .hero-sub {
+          font-family: var(--font-body);
+          font-size: 1.15rem;
+          color: var(--natural);
+          max-width: 480px;
+          line-height: 1.6;
+          margin-bottom: 2.5rem;
+          opacity: 0;
+          animation: fadeUp 0.8s ease forwards 0.6s;
+        }
+        .hero-buttons {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+          opacity: 0;
+          animation: fadeUp 0.8s ease forwards 0.8s;
+        }
+        .hero-floating-badge {
+          position: absolute;
+          right: 8vw;
+          top: 50%;
+          transform: translateY(-50%);
+          animation: float 6s ease-in-out infinite, fadeUp 1s ease forwards 1s;
+          opacity: 0;
+        }
+        .badge-circle {
+          width: 220px; height: 220px;
+          border: 3px solid var(--sunny);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          background: var(--ruby);
+          box-shadow: 8px 8px 0 var(--sunny);
+          text-align: center;
+          padding: 1.5rem;
+        }
+        .badge-circle .badge-num {
+          font-family: var(--font-display);
+          font-size: 4rem;
+          color: var(--sunny);
+          line-height: 1;
+        }
+        .badge-circle .badge-label {
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          color: var(--natural);
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin-top: 0.3rem;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(-50%) rotate(-3deg); }
+          50% { transform: translateY(calc(-50% - 20px)) rotate(3deg); }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(40px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+          font-family: var(--font-mono);
+          font-size: 0.85rem;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          padding: 14px 28px;
+          border: var(--border);
+          cursor: pointer;
+          transition: transform 0.1s, box-shadow 0.1s, background 0.15s;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          text-decoration: none;
+          position: relative;
+        }
+        .btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+        .btn:active { transform: translate(1px, 1px); box-shadow: var(--shadow-hover); }
+        .btn-primary { background: var(--sunny); color: var(--black); box-shadow: var(--shadow); }
+        .btn-primary:hover { background: var(--ruby); color: var(--white); }
+        .btn-secondary { background: transparent; color: var(--white); }
+        .btn-secondary:hover { background: var(--natural); color: var(--black); }
+        .btn-ruby { background: var(--ruby); color: var(--white); box-shadow: var(--shadow); }
+        .btn-ruby:hover { background: var(--ruby-dark); }
+        .btn-ghost { background: transparent; color: var(--black); }
+        .btn-ghost:hover { background: var(--sunny); }
+        .btn-sm { font-size: 0.75rem; padding: 8px 16px; }
+        .btn-loading::after {
+          content: '';
+          width: 14px; height: 14px;
+          border: 2px solid currentColor;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          margin-left: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── SECTIONS ─── */
+        section { padding: 6rem 8vw; }
+        .section-header {
+          display: flex;
+          align-items: baseline;
+          gap: 1.5rem;
+          margin-bottom: 3rem;
+          border-bottom: var(--border);
+          padding-bottom: 1rem;
+        }
+        .section-num {
+          font-family: var(--font-display);
+          font-size: 4rem;
+          color: var(--ruby);
+          line-height: 1;
+        }
+        .section-title {
+          font-family: var(--font-display);
+          font-size: 3.5rem;
+          letter-spacing: 1px;
+        }
+        .section-tag {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          color: var(--white);
+          background: var(--black);
+          padding: 4px 10px;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin-left: auto;
+        }
+
+        /* ─── TASKS SECTION ─── */
+        #tasks-section { background: var(--white); }
+        .tasks-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 1.5rem;
+        }
+        .task-card {
+          border: var(--border);
+          background: var(--natural-light);
+          padding: 1.5rem;
+          position: relative;
+          cursor: pointer;
+          transition: transform 0.15s, box-shadow 0.15s;
+          box-shadow: var(--shadow);
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        .task-card.visible {
+          animation: cardReveal 0.5s ease forwards;
+        }
+        @keyframes cardReveal {
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .task-card:hover { transform: translate(-4px, -4px); box-shadow: var(--shadow-lg); }
+        .task-card-type {
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          background: var(--sunny);
+          border: 2px solid var(--black);
+          color: var(--black);
+          padding: 3px 8px;
+          display: inline-block;
+          margin-bottom: 0.8rem;
+          font-weight: 700;
+        }
+        .task-card-type.DML { background: var(--ruby); color: var(--white); }
+        .task-card-type.DDL { background: var(--black); color: var(--sunny); }
+        .task-card-type.DCL { background: var(--natural-dark); }
+        .task-card-type.TCL { background: var(--ruby-light); color: var(--ruby-dark); }
+        .task-card h3 {
+          font-family: var(--font-display);
+          font-size: 1.8rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.1;
+        }
+        .task-card p {
+          font-size: 0.9rem;
+          color: #555;
+          line-height: 1.5;
+          margin-bottom: 1rem;
+        }
+        .task-card-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-top: 2px solid var(--black);
+          padding-top: 0.8rem;
+          margin-top: 0.5rem;
+        }
+        .task-card-time {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          color: #666;
+        }
+        .task-card-corner {
+          position: absolute;
+          top: -3px; right: -3px;
+          width: 0; height: 0;
+          border-left: 20px solid transparent;
+          border-top: 20px solid var(--ruby);
+          transition: border-top-color 0.2s;
+        }
+        .task-card:hover .task-card-corner { border-top-color: var(--sunny); }
+
+        /* ─── SUBMIT SECTION ─── */
+        #submit-section { background: var(--natural); }
+        .submit-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+          align-items: start;
+        }
+        @media (max-width: 768px) { .submit-layout { grid-template-columns: 1fr; } }
+        .panel {
+          border: var(--border);
+          background: var(--white);
+          box-shadow: var(--shadow-lg);
+        }
+        .panel-header {
+          background: var(--black);
+          color: var(--sunny);
+          font-family: var(--font-display);
+          font-size: 1.4rem;
+          letter-spacing: 2px;
+          padding: 0.8rem 1.2rem;
+          border-bottom: var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .panel-header .dot {
+          width: 10px; height: 10px;
+          border-radius: 50%;
+          background: var(--ruby);
+          display: inline-block;
+          margin-right: 6px;
+          animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.5; transform: scale(1.3); }
+        }
+        .panel-body { padding: 1.5rem; }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-label {
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #555;
+          display: block;
+          margin-bottom: 6px;
+        }
+        .form-input, .form-select {
+          width: 100%;
+          border: var(--border);
+          background: var(--natural-light);
+          font-family: var(--font-mono);
+          font-size: 0.85rem;
+          padding: 10px 14px;
+          outline: none;
+          transition: box-shadow 0.15s, background 0.15s;
+          appearance: none;
+          color: var(--black);
+        }
+        .form-input:focus, .form-select:focus {
+          background: var(--sunny-light);
+          box-shadow: 4px 4px 0 var(--ruby);
+        }
+        .form-textarea {
+          width: 100%;
+          border: var(--border);
+          background: var(--black);
+          color: #00ff88;
+          font-family: var(--font-mono);
+          font-size: 0.82rem;
+          padding: 1rem;
+          min-height: 200px;
+          resize: vertical;
+          outline: none;
+          line-height: 1.6;
+          transition: box-shadow 0.15s;
+        }
+        .form-textarea:focus { box-shadow: 4px 4px 0 var(--sunny); }
+        .form-textarea::placeholder { color: #444; }
+        .verdict-display {
+          border: var(--border);
+          min-height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 0.5rem;
+          background: var(--natural-light);
+          position: relative;
+          overflow: hidden;
+        }
+        .verdict-display.accepted { background: #e8f8e8; }
+        .verdict-display.wrong    { background: var(--ruby-light); }
+        .verdict-display.pending  { background: var(--sunny-light); }
+        .verdict-icon {
+          font-size: 4rem;
+          animation: bounceIn 0.5s cubic-bezier(0.36,0.07,0.19,0.97);
+        }
+        @keyframes bounceIn {
+          0%   { transform: scale(0) rotate(-20deg); }
+          60%  { transform: scale(1.2) rotate(5deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        .verdict-text {
+          font-family: var(--font-display);
+          font-size: 2.5rem;
+          letter-spacing: 2px;
+        }
+        .verdict-sub {
+          font-family: var(--font-mono);
+          font-size: 0.75rem;
+          color: #666;
+          letter-spacing: 1px;
+        }
+        .verdict-bar {
+          position: absolute;
+          bottom: 0; left: 0;
+          height: 5px;
+          background: var(--ruby);
+          transition: width 1s ease;
+        }
+
+        /* ─── LEADERBOARD ─── */
+        #leaderboard-section { background: var(--black); color: var(--white); }
+        #leaderboard-section .section-title { color: var(--sunny); }
+        #leaderboard-section .section-num { color: var(--ruby); }
+        #leaderboard-section .section-header { border-color: var(--sunny); }
+        .leaderboard-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-family: var(--font-mono);
+          font-size: 0.82rem;
+        }
+        .leaderboard-table thead tr {
+          background: var(--ruby);
+          border: var(--border);
+          border-color: var(--sunny);
+        }
+        .leaderboard-table th {
+          padding: 12px 16px;
+          text-align: left;
+          font-size: 0.68rem;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          color: var(--sunny);
+          border-right: 1px solid rgba(255,255,255,0.2);
+        }
+        .leaderboard-table tbody tr {
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          transition: background 0.2s;
+        }
+        .leaderboard-table tbody tr:hover { background: rgba(241,192,69,0.05); }
+        .leaderboard-table td {
+          padding: 14px 16px;
+          border-right: 1px solid rgba(255,255,255,0.05);
+          color: var(--natural);
+        }
+        .leaderboard-table tbody tr:nth-child(1) td:first-child { color: var(--sunny); font-weight: 700; }
+        .leaderboard-table tbody tr:nth-child(2) td:first-child { color: var(--natural); }
+        .leaderboard-table tbody tr:nth-child(3) td:first-child { color: #cd7f32; }
+        .verdict-badge {
+          display: inline-block;
+          font-size: 0.65rem;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          padding: 3px 8px;
+          border: 1.5px solid;
+          font-weight: 700;
+        }
+        .verdict-badge.ac  { color: #00ff88; border-color: #00ff88; }
+        .verdict-badge.wa  { color: var(--ruby); border-color: var(--ruby); }
+        .verdict-badge.tl  { color: var(--sunny); border-color: var(--sunny); }
+        .verdict-badge.ce  { color: #ff6b6b; border-color: #ff6b6b; }
+        .verdict-badge.re  { color: #aaa; border-color: #aaa; }
+        .leaderboard-filter {
+          display: flex;
+          gap: 0.8rem;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+        }
+        .filter-btn {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          padding: 6px 14px;
+          border: 1.5px solid rgba(255,255,255,0.2);
+          background: transparent;
+          color: var(--natural);
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+          border-color: var(--sunny);
+          color: var(--sunny);
+          background: rgba(241,192,69,0.1);
+        }
+
+        /* ─── ADMIN SECTION ─── */
+        #admin-section { background: var(--natural-light); }
+        .admin-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+        }
+        @media (max-width: 768px) { .admin-grid { grid-template-columns: 1fr; } }
+
+        /* ─── STATUS SECTION ─── */
+        #status-section { background: var(--sunny); }
+        #status-section .section-title { color: var(--black); }
+        .status-lookup {
+          display: flex;
+          gap: 0;
+          max-width: 500px;
+          margin-bottom: 2rem;
+        }
+        .status-lookup input {
+          flex: 1;
+          border: var(--border);
+          border-right: none;
+          background: var(--white);
+          font-family: var(--font-mono);
+          font-size: 0.9rem;
+          padding: 14px 16px;
+          outline: none;
+        }
+        .status-lookup .btn { border-left: none; }
+        .status-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 1rem;
+        }
+        .status-card {
+          border: var(--border);
+          background: var(--white);
+          padding: 1.2rem;
+          box-shadow: var(--shadow);
+          transform: translateY(20px);
+          opacity: 0;
+          transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.15s;
+        }
+        .status-card.show { transform: translateY(0); opacity: 1; }
+        .status-card:hover { box-shadow: var(--shadow-lg); transform: translate(-3px,-3px); }
+        .status-card-label {
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #666;
+          margin-bottom: 4px;
+        }
+        .status-card-value {
+          font-family: var(--font-display);
+          font-size: 1.8rem;
+          line-height: 1;
+        }
+
+        /* ─── CONTAINERS SECTION ─── */
+        #containers-section { background: var(--white); }
+        .containers-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 1rem;
+        }
+        .container-card {
+          border: var(--border);
+          padding: 1.2rem;
+          background: var(--natural-light);
+          box-shadow: var(--shadow);
+          position: relative;
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .container-card:hover { transform: translate(-3px,-3px); box-shadow: var(--shadow-lg); }
+        .container-status-dot {
+          width: 10px; height: 10px;
+          border-radius: 50%;
+          display: inline-block;
+          margin-right: 6px;
+        }
+        .container-status-dot.RUNNING  { background: #00cc66; animation: pulse 1.5s infinite; }
+        .container-status-dot.PAUSED   { background: var(--sunny); }
+        .container-status-dot.EXITED   { background: var(--ruby); }
+        .container-status-dot.CREATED  { background: var(--natural-dark); }
+        .container-status-dot.DEAD     { background: #333; }
+        .container-id {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          color: #777;
+          word-break: break-all;
+          margin-top: 0.4rem;
+        }
+        .container-host {
+          font-family: var(--font-mono);
+          font-size: 0.85rem;
+          color: var(--ruby);
+          font-weight: 700;
+          margin-top: 0.5rem;
+        }
+        .container-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+
+        /* ─── PARALLAX STRIP ─── */
+        .parallax-strip {
+          height: 300px;
+          background: var(--ruby);
+          border-top: var(--border);
+          border-bottom: var(--border);
+          display: flex;
+          align-items: center;
+          overflow: hidden;
+          position: relative;
+        }
+        .parallax-text {
+          font-family: var(--font-display);
+          font-size: 10rem;
+          color: transparent;
+          -webkit-text-stroke: 2px rgba(255,255,255,0.3);
+          white-space: nowrap;
+          will-change: transform;
+          display: flex;
+          gap: 4rem;
+        }
+        .parallax-text span { color: var(--sunny); -webkit-text-stroke: 0; }
+
+        /* ─── SCROLL REVEAL ─── */
+        .reveal {
+          opacity: 0;
+          transform: translateY(40px);
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ─── TOAST ─── */
+        .toast-container {
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          z-index: 5000;
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+        }
+        .toast {
+          font-family: var(--font-mono);
+          font-size: 0.8rem;
+          padding: 12px 20px;
+          border: var(--border);
+          box-shadow: var(--shadow);
+          background: var(--white);
+          color: var(--black);
+          min-width: 280px;
+          max-width: 380px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          animation: toastIn 0.3s cubic-bezier(0.36,0.07,0.19,0.97) forwards;
+        }
+        .toast.success { background: var(--sunny); }
+        .toast.error   { background: var(--ruby); color: var(--white); }
+        .toast.info    { background: var(--black); color: var(--sunny); }
+        @keyframes toastIn {
+          from { transform: translateX(120%) rotate(3deg); opacity: 0; }
+          to   { transform: translateX(0) rotate(0deg); opacity: 1; }
+        }
+        @keyframes toastOut {
+          to { transform: translateX(120%) rotate(3deg); opacity: 0; }
+        }
+        .toast.removing { animation: toastOut 0.3s ease forwards; }
+
+        /* ─── PROGRESS BAR ─── */
+        #progress-bar {
+          position: fixed;
+          top: 64px;
+          left: 0;
+          height: 4px;
+          background: var(--ruby);
+          z-index: 200;
+          transition: width 0.1s;
+          border-right: 2px solid var(--sunny);
+        }
+
+        /* ─── MODAL ─── */
+        .modal-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(13,13,13,0.85);
+          z-index: 1000;
+          align-items: center;
+          justify-content: center;
+          backdrop-filter: blur(2px);
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal {
+          background: var(--white);
+          border: var(--border);
+          box-shadow: var(--shadow-lg);
+          padding: 0;
+          max-width: 560px;
+          width: 90%;
+          animation: modalIn 0.3s cubic-bezier(0.36,0.07,0.19,0.97);
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        @keyframes modalIn {
+          from { transform: scale(0.8) rotate(-2deg); opacity: 0; }
+          to   { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .modal-header {
+          background: var(--black);
+          color: var(--sunny);
+          font-family: var(--font-display);
+          font-size: 1.8rem;
+          letter-spacing: 2px;
+          padding: 1rem 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .modal-close {
+          font-size: 1.5rem;
+          cursor: pointer;
+          background: none;
+          border: none;
+          color: var(--ruby);
+          font-weight: bold;
+          transition: transform 0.2s;
+        }
+        .modal-close:hover { transform: rotate(90deg); }
+        .modal-body { padding: 1.5rem; }
+
+        /* ─── STICKY SIDEBAR ─── */
+        .sticky-sidebar {
+          position: sticky;
+          top: 80px;
+          align-self: start;
+        }
+
+        /* ─── MISC ─── */
+        .divider {
+          height: 3px;
+          background: var(--black);
+          margin: 0;
+        }
+        .tag {
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          padding: 3px 8px;
+          border: 1.5px solid var(--black);
+          display: inline-block;
+        }
+        .kbd {
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          background: var(--black);
+          color: var(--sunny);
+          padding: 2px 6px;
+          border-radius: 2px;
+        }
+        .empty-state {
+          text-align: center;
+          padding: 3rem;
+          border: 2px dashed var(--natural-dark);
+          color: #888;
+          font-family: var(--font-mono);
+          font-size: 0.85rem;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+          background: linear-gradient(90deg, var(--natural) 25%, var(--natural-light) 50%, var(--natural) 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.2s infinite;
+          border: var(--border);
+          height: 120px;
+        }
+        @keyframes shimmer {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Scroll progress bar -->
+<div id="progress-bar" style="width:0%"></div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ─── NAV ─── -->
+<nav>
+    <div class="nav-logo">SQL<span>ZILLA</span></div>
+    <div class="nav-links">
+        <a class="nav-link active" href="#tasks-section">Задачи</a>
+        <a class="nav-link" href="#submit-section">Решение</a>
+        <a class="nav-link" href="#leaderboard-section">Рейтинг</a>
+        <a class="nav-link" href="#status-section">Статус</a>
+        <a class="nav-link" href="#admin-section">Админ</a>
+        <a class="nav-link" href="#containers-section">Контейнеры</a>
+    </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero" id="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-content">
+        <div class="hero-eyebrow">// Competitive SQL Judge System v1.0</div>
+        <h1 class="hero-title">
+            <div>SQL</div>
+            <div class="accent">ZILLA</div>
+            <div class="outline">JUDGE</div>
+        </h1>
+        <p class="hero-sub">
+            Отправляй SQL-решения, соревнуйся с другими, получай вердикт мгновенно.
+            Kafka гарантирует честный порядок.
+        </p>
+        <div class="hero-buttons">
+            <a class="btn btn-primary" href="#submit-section">Отправить решение ↓</a>
+            <a class="btn btn-secondary" href="#tasks-section">Смотреть задачи</a>
+        </div>
+    </div>
+    <div class="hero-floating-badge">
+        <div class="badge-circle">
+            <div class="badge-num" id="heroTaskCount">—</div>
+            <div class="badge-label">активных<br>задач</div>
+        </div>
+    </div>
+    <div class="hero-ticker">
+        <div class="hero-ticker-inner" id="tickerInner">
+            <span class="hero-ticker-item">SELECT * FROM победа</span>
+            <span class="hero-ticker-item">ACCEPTED</span>
+            <span class="hero-ticker-item">WRONG ANSWER</span>
+            <span class="hero-ticker-item">Kafka offset = порядок</span>
+            <span class="hero-ticker-item">JOIN ALL THE THINGS</span>
+            <span class="hero-ticker-item">GROUP BY skill</span>
+            <span class="hero-ticker-item">HAVING fun = true</span>
+            <span class="hero-ticker-item">SELECT * FROM победа</span>
+            <span class="hero-ticker-item">ACCEPTED</span>
+            <span class="hero-ticker-item">WRONG ANSWER</span>
+            <span class="hero-ticker-item">Kafka offset = порядок</span>
+            <span class="hero-ticker-item">JOIN ALL THE THINGS</span>
+            <span class="hero-ticker-item">GROUP BY skill</span>
+            <span class="hero-ticker-item">HAVING fun = true</span>
+        </div>
+    </div>
+</section>
+
+<!-- ─── TASKS SECTION ─── -->
+<section id="tasks-section">
+    <div class="section-header reveal">
+        <div class="section-num">01</div>
+        <h2 class="section-title">ЗАДАЧИ</h2>
+        <span class="section-tag">GET /sqlservice/tasks</span>
+    </div>
+    <div style="display:flex; gap:0.8rem; margin-bottom:1.5rem; flex-wrap:wrap;" class="reveal">
+        <select class="form-select" id="taskTypeFilter" style="width:auto; min-width:160px;"
+                onchange="filterTasks()">
+            <option value="">Все типы</option>
+            <option value="DQL">DQL — Выборка</option>
+            <option value="DML">DML — Изменение</option>
+            <option value="DDL">DDL — Структура</option>
+            <option value="DCL">DCL — Доступ</option>
+            <option value="TCL">TCL — Транзакции</option>
+        </select>
+        <select class="form-select" id="taskDbFilter" style="width:auto; min-width:200px;"
+                onchange="filterTasks()">
+            <option value="">Все базы данных</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="loadTasks()">↺ Обновить</button>
+    </div>
+    <div class="tasks-grid" id="tasksGrid">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+    </div>
+</section>
+
+<!-- ─── PARALLAX STRIP ─── -->
+<div class="parallax-strip">
+    <div class="parallax-text" id="parallaxText">
+        <span>SELECT</span> * FROM &nbsp;<span>GREATNESS</span>&nbsp; WHERE skill &gt; 0 &nbsp;
+        <span>ORDER</span> BY kafka_offset &nbsp;<span>ASC</span> &nbsp;—&nbsp;
+        <span>SELECT</span> * FROM &nbsp;<span>GREATNESS</span>&nbsp; WHERE skill &gt; 0
+    </div>
+</div>
+
+<!-- ─── SUBMIT SECTION ─── -->
+<section id="submit-section">
+    <div class="section-header reveal">
+        <div class="section-num">02</div>
+        <h2 class="section-title">РЕШЕНИЕ</h2>
+        <span class="section-tag">POST /sqlservice/submissions</span>
+    </div>
+    <div class="submit-layout">
+        <div>
+            <div class="panel reveal">
+                <div class="panel-header">
+                    <span><span class="dot"></span>РЕДАКТОР SQL</span>
+                    <span style="font-size:0.75rem; color: var(--natural); font-family: var(--font-mono);">
+            <span class="kbd">Ctrl+Enter</span> отправить
+          </span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label class="form-label">Задача</label>
+                        <select class="form-select" id="submitTaskId">
+                            <option value="">— Выбрать задачу —</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">User ID (UUID)</label>
+                        <input class="form-input" type="text" id="submitUserId"
+                               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                               value="">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SQL-запрос</label>
+                        <textarea class="form-textarea" id="submitSql"
+                                  placeholder="-- Введи свой SQL запрос здесь&#10;SELECT *&#10;FROM table_name&#10;WHERE condition;"></textarea>
+                    </div>
+                    <button class="btn btn-primary" id="submitBtn" onclick="submitSolution()" style="width:100%">
+                        Отправить решение →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sticky-sidebar">
+            <div class="panel reveal" style="margin-bottom:1.5rem;">
+                <div class="panel-header">ВЕРДИКТ</div>
+                <div class="panel-body" style="padding:0;">
+                    <div class="verdict-display" id="verdictDisplay">
+                        <div style="font-family:var(--font-mono); font-size:0.8rem; color:#888; text-align:center; padding:2rem;">
+                            Отправь решение<br>и получи вердикт
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel reveal">
+                <div class="panel-header">СТАТИСТИКА ПОСЫЛОК</div>
+                <div class="panel-body" style="padding:0.8rem;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;" id="submissionStats">
+                        <div class="status-card show" style="border:2px solid var(--black); box-shadow:none;">
+                            <div class="status-card-label">Всего</div>
+                            <div class="status-card-value" id="statTotal">—</div>
+                        </div>
+                        <div class="status-card show" style="border:2px solid var(--black); box-shadow:none;">
+                            <div class="status-card-label">Accepted</div>
+                            <div class="status-card-value" style="color:#00cc66;" id="statAc">—</div>
+                        </div>
+                        <div class="status-card show" style="border:2px solid var(--black); box-shadow:none;">
+                            <div class="status-card-label">Wrong</div>
+                            <div class="status-card-value" style="color:var(--ruby);" id="statWa">—</div>
+                        </div>
+                        <div class="status-card show" style="border:2px solid var(--black); box-shadow:none;">
+                            <div class="status-card-label">Pending</div>
+                            <div class="status-card-value" style="color:var(--sunny);" id="statPend">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ─── LEADERBOARD ─── -->
+<section id="leaderboard-section">
+    <div class="section-header reveal">
+        <div class="section-num">03</div>
+        <h2 class="section-title">РЕЙТИНГ</h2>
+        <span class="section-tag" style="border-color:var(--sunny); color:var(--black); background:var(--sunny);">
+      GET /submissions/leaderboard
+    </span>
+    </div>
+    <div style="display:flex; gap:1rem; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap;" class="reveal">
+        <select class="form-select" id="lbTaskId" style="width:auto; min-width:200px; background:var(--black); color:var(--natural);">
+            <option value="">— Выбрать задачу —</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="loadLeaderboard()">Загрузить →</button>
+    </div>
+    <div class="leaderboard-filter reveal" id="lbFilters">
+        <button class="filter-btn active" onclick="filterLeaderboard('ALL', this)">Все</button>
+        <button class="filter-btn" onclick="filterLeaderboard('ACCEPTED', this)">✓ Accepted</button>
+        <button class="filter-btn" onclick="filterLeaderboard('WRONG_ANSWER', this)">✗ Wrong</button>
+        <button class="filter-btn" onclick="filterLeaderboard('TIME_LIMIT_EXCEEDED', this)">⏱ TLE</button>
+        <button class="filter-btn" onclick="filterLeaderboard('COMPILATION_ERROR', this)">⚡ CE</button>
+    </div>
+    <div class="reveal" style="overflow-x:auto;">
+        <table class="leaderboard-table">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>User ID</th>
+                <th>Задача</th>
+                <th>Вердикт</th>
+                <th>Время (мс)</th>
+                <th>Kafka Offset</th>
+                <th>Дата</th>
+            </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+            <tr><td colspan="7" style="text-align:center; padding:3rem; color:#555;">
+                Выбери задачу и нажми «Загрузить»
+            </td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ─── STATUS LOOKUP ─── -->
+<section id="status-section">
+    <div class="section-header reveal">
+        <div class="section-num">04</div>
+        <h2 class="section-title">СТАТУС</h2>
+        <span class="section-tag">GET /submissions/{id}</span>
+    </div>
+    <div class="status-lookup reveal">
+        <input type="number" id="statusLookupId" placeholder="Введи Submission ID..."
+               onkeydown="if(event.key==='Enter') lookupStatus()">
+        <button class="btn btn-ruby" onclick="lookupStatus()">Найти →</button>
+    </div>
+    <div class="status-cards" id="statusCards"></div>
+</section>
+
+<!-- ─── ADMIN ─── -->
+<section id="admin-section">
+    <div class="section-header reveal">
+        <div class="section-num">05</div>
+        <h2 class="section-title">УПРАВЛЕНИЕ</h2>
+        <span class="section-tag">ADMIN PANEL</span>
+    </div>
+    <div class="admin-grid">
+        <!-- Create Task -->
+        <div class="panel reveal">
+            <div class="panel-header">
+                <span>+ НОВАЯ ЗАДАЧА</span>
+                <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--natural);">
+          POST /tasks
+        </span>
+            </div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label class="form-label">База данных</label>
+                    <select class="form-select" id="newTaskDbId">
+                        <option value="">— Выбрать БД —</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Название задачи</label>
+                    <input class="form-input" type="text" id="newTaskTitle" placeholder="Сложный JOIN...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тип</label>
+                    <select class="form-select" id="newTaskType">
+                        <option value="DQL">DQL — Выборка</option>
+                        <option value="DML">DML — Изменение</option>
+                        <option value="DDL">DDL — Структура</option>
+                        <option value="DCL">DCL — Доступ</option>
+                        <option value="TCL">TCL — Транзакции</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Описание задачи</label>
+                    <textarea class="form-textarea" id="newTaskDesc" style="min-height:80px;"
+                              placeholder="Условие задачи..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Правильный SQL</label>
+                    <textarea class="form-textarea" id="newTaskSql" style="min-height:100px;"
+                              placeholder="SELECT ..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Лимит времени (мс)</label>
+                    <input class="form-input" type="number" id="newTaskTl" value="30000" min="1000">
+                </div>
+                <button class="btn btn-primary" onclick="createTask()" style="width:100%">
+                    Создать задачу →
+                </button>
+            </div>
+        </div>
+
+        <!-- Manage Tasks -->
+        <div>
+            <!-- Register DB -->
+            <div class="panel reveal" style="margin-bottom:1.5rem;">
+                <div class="panel-header">
+                    <span>+ НОВАЯ БД</span>
+                    <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--natural);">
+            POST /databases
+          </span>
+                </div>
+                <div class="panel-body">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem;">
+                        <div class="form-group">
+                            <label class="form-label">Имя</label>
+                            <input class="form-input" type="text" id="newDbName" placeholder="ecommerce_db">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Схема</label>
+                            <input class="form-input" type="text" id="newDbSchema" placeholder="public">
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost" onclick="createDatabase()" style="width:100%">
+                        Создать БД →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Delete / Update Task -->
+            <div class="panel reveal">
+                <div class="panel-header">
+                    <span>⚡ УПРАВЛЕНИЕ ЗАДАЧЕЙ</span>
+                    <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--natural);">
+            PATCH / DELETE
+          </span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label class="form-label">ID задачи</label>
+                        <input class="form-input" type="number" id="manageTaskId" placeholder="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Новое название (опц.)</label>
+                        <input class="form-input" type="text" id="manageTaskTitle" placeholder="Оставь пустым если не менять">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Новый лимит мс (опц.)</label>
+                        <input class="form-input" type="number" id="manageTaskTl" placeholder="30000">
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-ghost btn-sm" onclick="updateTask()" style="flex:1">
+                            Обновить
+                        </button>
+                        <button class="btn btn-ruby btn-sm" onclick="deleteTask()" style="flex:1">
+                            Удалить ✕
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ─── CONTAINERS ─── -->
+<section id="containers-section">
+    <div class="section-header reveal">
+        <div class="section-num">06</div>
+        <h2 class="section-title">КОНТЕЙНЕРЫ</h2>
+        <span class="section-tag">GET /sqlservice/containers</span>
+    </div>
+    <div style="display:flex; gap:0.8rem; margin-bottom:1.5rem; flex-wrap:wrap;" class="reveal">
+        <select class="form-select" id="containerStatusFilter" style="width:auto; min-width:160px;"
+                onchange="loadContainers()">
+            <option value="">Все статусы</option>
+            <option value="RUNNING">RUNNING</option>
+            <option value="PAUSED">PAUSED</option>
+            <option value="EXITED">EXITED</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="openRegisterContainerModal()">
+            + Зарегистрировать контейнер
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadContainers()">↺ Обновить</button>
+    </div>
+    <div class="containers-grid reveal" id="containersGrid">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+    </div>
+</section>
+
+<!-- ─── MODAL: Register Container ─── -->
+<div class="modal-backdrop" id="modalRegisterContainer">
+    <div class="modal">
+        <div class="modal-header">
+            НОВЫЙ КОНТЕЙНЕР
+            <button class="modal-close" onclick="closeModal('modalRegisterContainer')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">База данных</label>
+                <select class="form-select" id="rcDbId">
+                    <option value="">— Выбрать БД —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Container ID (Docker)</label>
+                <input class="form-input" type="text" id="rcContainerId"
+                       placeholder="a3f2b1c4d5e6...">
+            </div>
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:0.8rem;">
+                <div class="form-group">
+                    <label class="form-label">Host</label>
+                    <input class="form-input" type="text" id="rcHost" value="localhost">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Port</label>
+                    <input class="form-input" type="number" id="rcPort" value="5433">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="registerContainer()" style="width:100%; margin-top:0.5rem;">
+                Зарегистрировать →
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ─── MODAL: Task Detail ─── -->
+<div class="modal-backdrop" id="modalTaskDetail">
+    <div class="modal">
+        <div class="modal-header">
+            <span id="modalTaskTitle">ЗАДАЧА</span>
+            <button class="modal-close" onclick="closeModal('modalTaskDetail')">✕</button>
+        </div>
+        <div class="modal-body" id="modalTaskBody"></div>
+    </div>
+</div>
+
+<script>
+    // ─── STATE ───────────────────────────────────────────────────
+    const API = '';  // base URL — пустой = relative (Thymeleaf)
+    let allTasks = [];
+    let allSubmissions = [];
+    let lbData = [];
+    let currentLbFilter = 'ALL';
+
+    // ─── CURSOR ──────────────────────────────────────────────────
+    const dot  = document.getElementById('cursorDot');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    (function animCursor() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      dot.style.left  = mx + 'px'; dot.style.top  = my + 'px';
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(animCursor);
+    })();
+    document.querySelectorAll('button, a, .task-card, .nav-link').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        dot.style.width = '20px'; dot.style.height = '20px';
+        dot.style.background = 'var(--sunny)';
+        ring.style.width = '50px'; ring.style.height = '50px';
+      });
+      el.addEventListener('mouseleave', () => {
+        dot.style.width = '12px'; dot.style.height = '12px';
+        dot.style.background = 'var(--ruby)';
+        ring.style.width = '36px'; ring.style.height = '36px';
+      });
+    });
+
+    // ─── SCROLL PROGRESS ─────────────────────────────────────────
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      document.getElementById('progress-bar').style.width = (window.scrollY / h * 100) + '%';
+    });
+
+    // ─── SCROLL REVEAL ────────────────────────────────────────────
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 80);
+          revealObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+    // ─── TASK CARD REVEAL ─────────────────────────────────────────
+    const cardObs = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 100);
+          cardObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.05 });
+
+    // ─── PARALLAX ────────────────────────────────────────────────
+    window.addEventListener('scroll', () => {
+      const el = document.getElementById('parallaxText');
+      const strip = el?.closest('.parallax-strip');
+      if (!strip) return;
+      const rect = strip.getBoundingClientRect();
+      const progress = -rect.top / window.innerHeight;
+      el.style.transform = `translateX(${progress * -120}px)`;
+    });
+
+    // ─── NAV ACTIVE ──────────────────────────────────────────────
+    const sections = ['tasks-section','submit-section','leaderboard-section','status-section','admin-section','containers-section'];
+    const navLinks  = document.querySelectorAll('.nav-link');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(id => {
+        const sec = document.getElementById(id);
+        if (sec && window.scrollY >= sec.offsetTop - 120) current = id;
+      });
+      navLinks.forEach(lnk => {
+        lnk.classList.toggle('active', lnk.getAttribute('href') === '#' + current);
+      });
+    });
+
+    // ─── KEYBOARD SHORTCUT ───────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitSolution();
+    });
+
+    // ─── TOAST ───────────────────────────────────────────────────
+    function toast(msg, type = 'info', duration = 3500) {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      const icons = { success: '✓', error: '✕', info: '→' };
+      t.className = `toast ${type}`;
+      t.innerHTML = `<span>${icons[type]||'→'}</span><span>${msg}</span>`;
+      c.appendChild(t);
+      setTimeout(() => {
+        t.classList.add('removing');
+        setTimeout(() => t.remove(), 350);
+      }, duration);
+    }
+
+    // ─── API HELPERS ─────────────────────────────────────────────
+    async function apiGet(path) {
+      try {
+        const r = await fetch('/sqlservice' + path);
+        if (!r.ok) throw new Error(await r.text());
+        return await r.json();
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); return null; }
+    }
+    async function apiPost(path, body) {
+      try {
+        const r = await fetch('/sqlservice' + path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+        return data.data;
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); return null; }
+    }
+    async function apiPatch(path, body) {
+      try {
+        const r = await fetch('/sqlservice' + path, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+        return data.data;
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); return null; }
+    }
+    async function apiDelete(path) {
+      try {
+        const r = await fetch('/sqlservice' + path, { method: 'DELETE' });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+        return true;
+      } catch(e) { toast('Ошибка: ' + e.message, 'error'); return false; }
+    }
+
+    // ─── TASKS ───────────────────────────────────────────────────
+    async function loadTasks() {
+      const grid = document.getElementById('tasksGrid');
+      grid.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+      const res = await apiGet('/tasks');
+      if (!res) return;
+      allTasks = res.data || [];
+      document.getElementById('heroTaskCount').textContent = allTasks.length;
+      renderTasks(allTasks);
+      populateTaskSelects(allTasks);
+    }
+
+    function renderTasks(tasks) {
+      const grid = document.getElementById('tasksGrid');
+      if (!tasks.length) {
+        grid.innerHTML = '<div class="empty-state">Задач пока нет. Создай первую в разделе «Управление».</div>';
+        return;
+      }
+      grid.innerHTML = tasks.map(t => `
+        <div class="task-card" onclick="openTaskDetail(${t.taskId})">
+          <div class="task-card-corner"></div>
+          <span class="task-card-type ${t.type}">${t.type}</span>
+          <h3>${t.title || 'Без названия'}</h3>
+          <p>${(t.description || '').slice(0, 120)}${t.description?.length > 120 ? '…' : ''}</p>
+          <div class="task-card-footer">
+            <span class="task-card-time">⏱ ${t.timeLimitMs || 30000} мс</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); selectTaskForSubmit(${t.taskId})">
+              Решить →
+            </button>
+          </div>
+        </div>
+      `).join('');
+      document.querySelectorAll('.task-card').forEach(c => cardObs.observe(c));
+    }
+
+    function filterTasks() {
+      const type = document.getElementById('taskTypeFilter').value;
+      const db   = document.getElementById('taskDbFilter').value;
+      let filtered = allTasks;
+      if (type) filtered = filtered.filter(t => t.type === type);
+      if (db)   filtered = filtered.filter(t => t.database?.id == db);
+      renderTasks(filtered);
+    }
+
+    function populateTaskSelects(tasks) {
+      const opts = tasks.map(t => `<option value="${t.taskId}">${t.taskId}. ${t.title}</option>`).join('');
+      ['submitTaskId','lbTaskId'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<option value="">— Выбрать задачу —</option>' + opts;
+      });
+    }
+
+    function selectTaskForSubmit(taskId) {
+      document.getElementById('submitTaskId').value = taskId;
+      document.getElementById('submit-section').scrollIntoView({ behavior: 'smooth' });
+      toast('Задача выбрана! Введи свой SQL ↓', 'success');
+    }
+
+    function openTaskDetail(taskId) {
+      const task = allTasks.find(t => t.taskId === taskId);
+      if (!task) return;
+      document.getElementById('modalTaskTitle').textContent = task.title || 'Задача #' + taskId;
+      document.getElementById('modalTaskBody').innerHTML = `
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+          <span class="tag">${task.type}</span>
+          <span class="tag">ID: ${task.taskId}</span>
+          <span class="tag">⏱ ${task.timeLimitMs} мс</span>
+        </div>
+        <p style="font-family:var(--font-body); line-height:1.6; margin-bottom:1rem;">
+          ${task.description || 'Описание отсутствует.'}
+        </p>
+        <button class="btn btn-primary" onclick="closeModal('modalTaskDetail'); selectTaskForSubmit(${task.taskId})" style="width:100%">
+          Решить эту задачу →
+        </button>
+      `;
+      openModal('modalTaskDetail');
+    }
+
+    // ─── DATABASES ────────────────────────────────────────────────
+    async function loadDatabases() {
+      const res = await apiGet('/databases');
+      if (!res) return;
+      const dbs = res.data || [];
+      const opts = dbs.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+      ['newTaskDbId','rcDbId'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<option value="">— Выбрать БД —</option>' + opts;
+      });
+      const dbFilter = document.getElementById('taskDbFilter');
+      if (dbFilter) dbFilter.innerHTML = '<option value="">Все базы данных</option>' + opts;
+    }
+
+    async function createDatabase() {
+      const name   = document.getElementById('newDbName').value.trim();
+      const schema = document.getElementById('newDbSchema').value.trim();
+      if (!name || !schema) { toast('Заполни имя и схему', 'error'); return; }
+      const res = await apiPost('/databases', { name, schemaName: schema });
+      if (res) {
+        toast(`БД "${res.name}" создана!`, 'success');
+        document.getElementById('newDbName').value = '';
+        document.getElementById('newDbSchema').value = '';
+        await loadDatabases();
+      }
+    }
+
+    // ─── SUBMIT ───────────────────────────────────────────────────
+    async function submitSolution() {
+      const taskId      = document.getElementById('submitTaskId').value;
+      const userId      = document.getElementById('submitUserId').value.trim();
+      const userSqlQuery= document.getElementById('submitSql').value.trim();
+
+      if (!taskId || !userId || !userSqlQuery) {
+        toast('Заполни все поля!', 'error'); return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.classList.add('btn-loading');
+      btn.textContent = 'Отправляю...';
+      btn.disabled = true;
+
+      showVerdictPending();
+
+      const res = await apiPost('/submissions', { taskId: +taskId, userId, userSqlQuery });
+      btn.classList.remove('btn-loading');
+      btn.textContent = 'Отправить решение →';
+      btn.disabled = false;
+
+      if (res !== null && res !== undefined) {
+        toast(`Посылка #${res} отправлена! Жди вердикт...`, 'success');
+        pollVerdict(res);
+      }
+    }
+
+    function showVerdictPending() {
+      const d = document.getElementById('verdictDisplay');
+      d.className = 'verdict-display pending';
+      d.innerHTML = `
+        <div class="verdict-icon">⏳</div>
+        <div class="verdict-text">PENDING</div>
+        <div class="verdict-sub">Kafka обрабатывает...</div>
+        <div class="verdict-bar" style="width:0%; animation: loadBar 3s linear forwards;"></div>
+      `;
+    }
+
+    async function pollVerdict(submissionId, attempts = 0) {
+      if (attempts > 20) { showVerdictError('Таймаут ожидания'); return; }
+      const res = await apiGet('/submissions/' + submissionId);
+      if (!res) return;
+      const s = res.data;
+      if (s.status === 'PENDING' || s.status === 'ERROR' && attempts < 2) {
+        setTimeout(() => pollVerdict(submissionId, attempts + 1), 1500);
+        return;
+      }
+      showVerdictResult(s);
+      await loadSubmissionStats();
+    }
+
+    const VERDICT_CONFIG = {
+      ACCEPTED:              { icon: '✓', text: 'ACCEPTED',  cls: 'accepted', color: '#00cc66' },
+      WRONG_ANSWER:          { icon: '✗', text: 'WRONG',     cls: 'wrong',    color: 'var(--ruby)' },
+      TIME_LIMIT_EXCEEDED:   { icon: '⏱', text: 'TLE',       cls: 'wrong',    color: 'var(--sunny)' },
+      COMPILATION_ERROR:     { icon: '⚡', text: 'SYNTAX',   cls: 'wrong',    color: '#ff6b6b' },
+      RUNTIME_ERROR:         { icon: '💥', text: 'RUNTIME',  cls: 'wrong',    color: '#ff6b6b' },
+      SECURITY_VIOLATION:    { icon: '🔒', text: 'BLOCKED',  cls: 'wrong',    color: var_ruby() },
+      SYSTEM_ERROR:          { icon: '⚠', text: 'SYSTEM ERR',cls: 'wrong',    color: '#aaa' },
+      PRESENTATION_ERROR:    { icon: '📋', text: 'PRES ERR', cls: 'wrong',    color: '#aaa' },
+    };
+    function var_ruby() { return 'var(--ruby)'; }
+
+    function showVerdictResult(s) {
+      const cfg = VERDICT_CONFIG[s.verdict] || { icon: '?', text: s.verdict, cls: '', color: '#aaa' };
+      const d = document.getElementById('verdictDisplay');
+      d.className = 'verdict-display ' + cfg.cls;
+      d.innerHTML = `
+        <div class="verdict-icon">${cfg.icon}</div>
+        <div class="verdict-text" style="color:${cfg.color}">${cfg.text}</div>
+        ${s.executionTimeMs ? `<div class="verdict-sub">⏱ ${s.executionTimeMs} мс</div>` : ''}
+        ${s.kafkaOffset !== null ? `<div class="verdict-sub">Offset: ${s.kafkaOffset}</div>` : ''}
+        ${s.errorMessage ? `<div style="font-family:var(--font-mono);font-size:0.65rem;color:#666;padding:0.5rem;max-width:100%;word-break:break-all;">${s.errorMessage.slice(0,100)}</div>` : ''}
+        <div class="verdict-bar" style="width:100%; background:${cfg.color};"></div>
+      `;
+      if (cfg.cls === 'accepted') confetti();
+    }
+
+    function showVerdictError(msg) {
+      const d = document.getElementById('verdictDisplay');
+      d.className = 'verdict-display wrong';
+      d.innerHTML = `<div class="verdict-icon">⚠</div><div class="verdict-text">ОШИБКА</div><div class="verdict-sub">${msg}</div>`;
+    }
+
+    // Mini confetti
+    function confetti() {
+      const colors = ['var(--ruby)', 'var(--sunny)', 'var(--natural)', '#fff'];
+      for (let i = 0; i < 60; i++) {
+        const el = document.createElement('div');
+        el.style.cssText = `position:fixed;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;
+          background:${colors[Math.floor(Math.random()*colors.length)]};
+          left:${30+Math.random()*40}%;top:40%;border-radius:${Math.random()>0.5?'50%':'0'};
+          pointer-events:none;z-index:9000;transform-origin:center;`;
+        document.body.appendChild(el);
+        const angle = (Math.random() - 0.5) * 2 * Math.PI;
+        const dist  = 100 + Math.random() * 300;
+        el.animate([
+          { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+          { transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist - 150}px) rotate(${720*Math.random()}deg)`, opacity: 0 }
+        ], { duration: 1200 + Math.random() * 600, easing: 'cubic-bezier(0,0.9,0.57,1)', fill: 'forwards' })
+        .onfinish = () => el.remove();
+      }
+    }
+
+    // ─── SUBMISSION STATS ─────────────────────────────────────────
+    async function loadSubmissionStats() {
+      const res = await apiGet('/submissions');
+      if (!res) return;
+      const subs = res.data || [];
+      allSubmissions = subs;
+      document.getElementById('statTotal').textContent = subs.length;
+      document.getElementById('statAc').textContent = subs.filter(s => s.verdict === 'ACCEPTED').length;
+      document.getElementById('statWa').textContent = subs.filter(s => s.verdict === 'WRONG_ANSWER').length;
+      document.getElementById('statPend').textContent = subs.filter(s => s.status === 'PENDING').length;
+    }
+
+    // ─── LEADERBOARD ──────────────────────────────────────────────
+    async function loadLeaderboard() {
+      const taskId = document.getElementById('lbTaskId').value;
+      if (!taskId) { toast('Выбери задачу', 'error'); return; }
+      const res = await apiGet('/submissions/leaderboard?taskId=' + taskId);
+      if (!res) return;
+      lbData = res.data || [];
+      renderLeaderboard(lbData);
+    }
+
+    function filterLeaderboard(verdict, btn) {
+      currentLbFilter = verdict;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtered = verdict === 'ALL' ? lbData : lbData.filter(s => s.verdict === verdict);
+      renderLeaderboard(filtered);
+    }
+
+    function renderLeaderboard(data) {
+      const tbody = document.getElementById('leaderboardBody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#555;">Нет посылок</td></tr>';
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      tbody.innerHTML = data.map((s, i) => {
+        const vMap = {
+          ACCEPTED:'ac', WRONG_ANSWER:'wa',
+          TIME_LIMIT_EXCEEDED:'tl', COMPILATION_ERROR:'ce', RUNTIME_ERROR:'re'
+        };
+        const vcls = vMap[s.verdict] || 're';
+        return `<tr>
+          <td>${medals[i] || (i+1)}</td>
+          <td style="font-size:0.7rem;">${(s.userId||'').slice(0,8)}…</td>
+          <td>${s.task?.title || s.task?.taskId || '—'}</td>
+          <td><span class="verdict-badge ${vcls}">${s.verdict}</span></td>
+          <td>${s.executionTimeMs ?? '—'}</td>
+          <td style="color:var(--sunny)">${s.kafkaOffset ?? '—'}</td>
+          <td style="font-size:0.7rem;">${s.createdAt ? new Date(s.createdAt).toLocaleString('ru') : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ─── STATUS LOOKUP ────────────────────────────────────────────
+    async function lookupStatus() {
+      const id = document.getElementById('statusLookupId').value;
+      if (!id) { toast('Введи ID посылки', 'error'); return; }
+      const res = await apiGet('/submissions/' + id);
+      if (!res) return;
+      const s = res.data;
+      const container = document.getElementById('statusCards');
+      const fields = [
+        { label: 'Submission ID', value: s.submissionId },
+        { label: 'Статус',  value: s.status },
+        { label: 'Вердикт', value: s.verdict },
+        { label: 'Время',   value: s.executionTimeMs ? s.executionTimeMs + ' мс' : '—' },
+        { label: 'Kafka Offset', value: s.kafkaOffset ?? '—' },
+      ];
+      container.innerHTML = fields.map(f => `
+        <div class="status-card">
+          <div class="status-card-label">${f.label}</div>
+          <div class="status-card-value">${f.value ?? '—'}</div>
+        </div>
+      `).join('');
+      setTimeout(() => container.querySelectorAll('.status-card').forEach((c,i) => {
+        setTimeout(() => c.classList.add('show'), i * 80);
+      }), 50);
+      if (s.errorMessage) toast('Ошибка: ' + s.errorMessage, 'error', 5000);
+    }
+
+    // ─── ADMIN: CREATE TASK ───────────────────────────────────────
+    async function createTask() {
+      const body = {
+        databaseId:   +document.getElementById('newTaskDbId').value,
+        title:         document.getElementById('newTaskTitle').value.trim(),
+        type:          document.getElementById('newTaskType').value,
+        description:   document.getElementById('newTaskDesc').value.trim(),
+        correctSqlQuery: document.getElementById('newTaskSql').value.trim(),
+        timeLimitMs:  +document.getElementById('newTaskTl').value || 30000,
+      };
+      if (!body.databaseId || !body.title || !body.correctSqlQuery) {
+        toast('БД, название и SQL — обязательны', 'error'); return;
+      }
+      const res = await apiPost('/tasks', body);
+      if (res) {
+        toast(`Задача "${res.title}" создана! ID: ${res.taskId}`, 'success');
+        ['newTaskTitle','newTaskDesc','newTaskSql'].forEach(id =>
+          document.getElementById(id).value = '');
+        await loadTasks();
+      }
+    }
+
+    async function updateTask() {
+      const id    = document.getElementById('manageTaskId').value;
+      const title = document.getElementById('manageTaskTitle').value.trim() || undefined;
+      const tl    = document.getElementById('manageTaskTl').value || undefined;
+      if (!id) { toast('Введи ID задачи', 'error'); return; }
+      const body = {};
+      if (title) body.title = title;
+      if (tl)    body.timeLimitMs = +tl;
+      if (!Object.keys(body).length) { toast('Нечего обновлять', 'error'); return; }
+      const res = await apiPatch('/tasks/' + id, body);
+      if (res) {
+        toast(`Задача #${id} обновлена`, 'success');
+        await loadTasks();
+      }
+    }
+
+    async function deleteTask() {
+      const id = document.getElementById('manageTaskId').value;
+      if (!id) { toast('Введи ID задачи', 'error'); return; }
+      if (!confirm(`Удалить задачу #${id}? Кеш тоже удалится.`)) return;
+      const ok = await apiDelete('/tasks/' + id);
+      if (ok) { toast(`Задача #${id} удалена`, 'info'); await loadTasks(); }
+    }
+
+    // ─── CONTAINERS ───────────────────────────────────────────────
+    async function loadContainers() {
+      const status = document.getElementById('containerStatusFilter').value;
+      const path   = status ? '/containers?status=' + status : '/containers';
+      const res    = await apiGet(path);
+      if (!res) return;
+      const containers = res.data || [];
+      const grid = document.getElementById('containersGrid');
+      if (!containers.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Контейнеры не найдены</div>';
+        return;
+      }
+      grid.innerHTML = containers.map(c => `
+        <div class="container-card">
+          <div style="display:flex; align-items:center; margin-bottom:0.4rem;">
+            <span class="container-status-dot ${c.status}"></span>
+            <strong style="font-family:var(--font-display); font-size:1.2rem;">${c.status}</strong>
+          </div>
+          <div class="container-host">${c.host}:${c.port}</div>
+          <div class="container-id">${c.containerId}</div>
+          <div style="font-family:var(--font-mono);font-size:0.7rem;color:#888;margin-top:0.3rem;">
+            БД: ${c.database?.name || '—'}
+          </div>
+          <div class="container-actions">
+            <button class="btn btn-ghost btn-sm" onclick="updateContainerStatus(${c.id}, 'RUNNING')">▶</button>
+            <button class="btn btn-ghost btn-sm" onclick="updateContainerStatus(${c.id}, 'PAUSED')">⏸</button>
+            <button class="btn btn-ruby btn-sm" onclick="removeContainer(${c.id})">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateContainerStatus(id, status) {
+      const res = await apiPatch('/containers/' + id + '/status?value=' + status, {});
+      if (res) { toast(`Контейнер ${id}: ${status}`, 'success'); await loadContainers(); }
+    }
+
+    async function removeContainer(id) {
+      if (!confirm(`Удалить контейнер #${id}?`)) return;
+      const ok = await apiDelete('/containers/' + id);
+      if (ok) { toast(`Контейнер #${id} удалён`, 'info'); await loadContainers(); }
+    }
+
+    async function registerContainer() {
+      const body = {
+        databaseId:  +document.getElementById('rcDbId').value,
+        containerId:  document.getElementById('rcContainerId').value.trim(),
+        host:         document.getElementById('rcHost').value.trim(),
+        port:        +document.getElementById('rcPort').value,
+      };
+      if (!body.databaseId || !body.containerId || !body.host || !body.port) {
+        toast('Заполни все поля', 'error'); return;
+      }
+      const res = await apiPost('/containers', body);
+      if (res) {
+        toast(`Контейнер зарегистрирован!`, 'success');
+        closeModal('modalRegisterContainer');
+        await loadContainers();
+      }
+    }
+
+    // ─── MODALS ───────────────────────────────────────────────────
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function openRegisterContainerModal() { openModal('modalRegisterContainer'); }
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+      m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape')
+        document.querySelectorAll('.modal-backdrop.open').forEach(m => closeModal(m.id));
+    });
+
+    // ─── UUID AUTOFILL ────────────────────────────────────────────
+    function generateUUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    }
+    const userIdInput = document.getElementById('submitUserId');
+    if (!userIdInput.value) userIdInput.value = generateUUID();
+
+    // ─── INIT ─────────────────────────────────────────────────────
+    async function init() {
+      await Promise.all([loadDatabases(), loadTasks(), loadContainers(), loadSubmissionStats()]);
+    }
+    init();
+</script>
+</body>
+</html>

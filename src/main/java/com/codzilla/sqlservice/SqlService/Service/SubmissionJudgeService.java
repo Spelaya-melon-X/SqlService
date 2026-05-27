@@ -2,6 +2,8 @@ package com.codzilla.sqlservice.SqlService.Service;
 import com.codzilla.sqlservice.SqlService.Dto.JudgeResult;
 import com.codzilla.sqlservice.SqlService.Dto.SqlExecutionResult;
 import com.codzilla.sqlservice.SqlService.model.SqlVerdict;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import java.util.Map;
 public class SubmissionJudgeService {
 
     private final CacheService cacheService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Вынести вердикт.
@@ -63,12 +66,15 @@ public class SubmissionJudgeService {
      * Важно: результат сортируем по всем значениям чтобы порядок строк не влиял на хеш.
      * Если задача требует определённого ORDER BY — убрать сортировку здесь.
      */
+
+
+
     private String serializeForHash(List<Map<String, Object>> rows) {
-        List<String> rowStrings = rows.stream()
-                .map(Map::toString)
-                .sorted()
-                .toList();
-        return rowStrings.toString();
+        try {
+            return objectMapper.writeValueAsString(rows);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize for hash", e);
+        }
     }
 
 }

@@ -67,7 +67,7 @@ public class ContainerDataSourceService {
     /** it finds free container for DB_task and return a JdbcTemplate*/
     public JdbcTemplate getAvailableJdbcTemplate(Long databaseEntityId) {
         DockerContainers container = containerRepository
-                .findFirstByDatabaseIdAndStatus(
+                .findFirstByDatabaseAndStatus(
                         containerRepository.findById(databaseEntityId)
                                 .orElseThrow(() -> new IllegalArgumentException(
                                         "Database not found: " + databaseEntityId))

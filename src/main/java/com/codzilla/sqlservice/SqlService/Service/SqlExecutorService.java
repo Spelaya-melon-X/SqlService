@@ -34,7 +34,8 @@ public class SqlExecutorService {
 
         long startTime = System.currentTimeMillis();
         try {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql); /* result after sql */
+            String cleanSql = sql.trim().replaceAll(";$", "");
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(cleanSql);
             long elapsed = System.currentTimeMillis() - startTime;
 
             log.debug("SQL executed in {}ms, {} rows returned", elapsed, rows.size());

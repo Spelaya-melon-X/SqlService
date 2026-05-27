@@ -1,5 +1,6 @@
 package com.codzilla.sqlservice.SqlService.DB;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,7 +21,8 @@ public class TaskResultCache {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "task_id", nullable = false, unique = true)
     private Task task;
 

@@ -4,6 +4,7 @@ package com.codzilla.sqlservice.SqlService.DB;
 
 import com.codzilla.sqlservice.SqlService.model.SqlVerdict;
 import com.codzilla.sqlservice.SqlService.model.SubmissionStatus;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +25,7 @@ public class SqlSubmission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long submissionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 

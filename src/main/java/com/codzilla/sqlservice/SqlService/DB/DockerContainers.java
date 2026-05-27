@@ -1,6 +1,8 @@
 package com.codzilla.sqlservice.SqlService.DB;
 
 import com.codzilla.sqlservice.SqlService.model.ContainerStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +23,8 @@ public class DockerContainers {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "database_id", nullable = false)
     private DatabaseEntity database;
 
