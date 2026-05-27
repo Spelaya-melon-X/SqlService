@@ -44,18 +44,18 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
 
-  # Тестовый контейнер для задач (можно добавить несколько)
-  postgres-test-1:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: testdb
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: secret
-    ports:
-      - "5434:5432"
-    volumes:
-      - ./sql/init_task1.sql:/docker-entrypoint-initdb.d/init.sql
-
+# Тестовый контейнер для задач (можно добавить несколько)
+#  postgres-test-1:
+#    image: postgres:15
+#    environment:
+#      POSTGRES_DB: testdb
+#      POSTGRES_USER: myuser
+#      POSTGRES_PASSWORD: secret
+#    ports:
+#      - "5434:5432"
+#    volumes:
+#      - ./sql/init_task1.sql:/docker-entrypoint-initdb.d/init.sql
+#
 
 volumes:
   postgres_data:
